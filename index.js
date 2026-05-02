@@ -1,4 +1,11 @@
 require('dotenv').config();
+console.log('Environment variables loaded:');
+console.log(' - TOKEN:', process.env.TOKEN ? `'${process.env.TOKEN}'` : 'not set');
+console.log(' - DISCORD_TOKEN:', process.env.DISCORD_TOKEN ? `'${process.env.DISCORD_TOKEN}'` : 'not set');
+console.log(' - MONGO_URI:', process.env.MONGO_URI ? `'${process.env.MONGO_URI}'` : 'not set');
+console.log(' - DISCORD_CLIENT_ID:', process.env.DISCORD_CLIENT_ID ? `'${process.env.DISCORD_CLIENT_ID}'` : 'not set');
+console.log(' - CLIENT_ID:', process.env.CLIENT_ID ? `'${process.env.CLIENT_ID}'` : 'not set');
+
 const fs = require('fs');
 const path = require('path');
 const { Client, GatewayIntentBits, Events, Collection } = require('discord.js');
@@ -14,9 +21,17 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-const discordToken = process.env.DISCORD_TOKEN;
-const mongoUri = process.env.MONGO_URI;
-const clientId = process.env.CLIENT_ID;
+const discordTokenRaw = process.env.DISCORD_TOKEN || process.env.TOKEN;
+const discordToken = discordTokenRaw ? discordTokenRaw.trim() : null;
+const mongoUriRaw = process.env.MONGO_URI;
+const mongoUri = mongoUriRaw ? mongoUriRaw.trim() : null;
+const clientIdRaw = process.env.DISCORD_CLIENT_ID || process.env.CLIENT_ID;
+const clientId = clientIdRaw ? clientIdRaw.trim() : null;
+
+console.log('Processed values:');
+console.log(' - discordToken:', discordToken ? `'${discordToken}'` : 'null');
+console.log(' - mongoUri:', mongoUri ? `'${mongoUri}'` : 'null');
+console.log(' - clientId:', clientId ? `'${clientId}'` : 'null');
 
 async function loadCommands(client) {
   const commandsPath = path.join(__dirname, 'commands');
@@ -37,7 +52,7 @@ async function loadCommands(client) {
 
 function validateEnvironment() {
   if (!discordToken || !mongoUri || !clientId) {
-    console.error('Missing required environment variables. Ensure DISCORD_TOKEN, CLIENT_ID, and MONGO_URI are set.');
+    console.error('Missing required environment variables. Ensure DISCORD_TOKEN (or TOKEN), MONGO_URI, and DISCORD_CLIENT_ID (or CLIENT_ID) are set.');
     process.exit(1);
   }
 
@@ -51,6 +66,16 @@ async function start() {
   console.log('Starting bot...');
 
   validateEnvironment();
+
+  // Debug: log token info (be careful with sensitive data)
+  if (discordToken) {
+    console.log(`Token length: ${discordToken.length}`);
+    console.log(`Token starts with: ${discordToken.substring(0, 3)}`);
+    console.log(`Token ends with: ${discordToken.substring(discordToken.length - 3)}`);
+    // Check if token looks like a bot token (should have 2 dots)
+    const parts = discordToken.split('.');
+    console.log(`Token has ${parts.length} parts: ${parts.map(p => p.length)}`);
+  }
 
   console.log('Connecting to MongoDB...');
   await connectDatabase(mongoUri);
